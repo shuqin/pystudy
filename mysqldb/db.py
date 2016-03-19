@@ -84,7 +84,7 @@ class Mydb(DB):
                  timeout = 5, auto_connect = False, max_idle_time = 28800):
         '''Initialize the Mydb object.'''
         # Get the database parameters
-        args = {'host':'127.0.0.1', 'user':'root','passwd':'lovesqcc','db':'goodcode','port':3306,'charset':'utf8'}
+        args = {'host':'127.0.0.1', 'user':'root','passwd':'xxxx','db':'goodcode','port':3306,'charset':'utf8'}
 
         # Set extra connection parameters
         args['connect_timeout'] = timeout
@@ -103,7 +103,7 @@ class Systemdb(DB):
                  max_idle_time = 28800):
         '''Initialize the Systemdb object.'''
         # Get the database parameters
-        args = {'host':'127.0.0.1', 'user':'root','passwd':'lovesqcc','db':'mysql','port':3306,'charset':'utf8'}
+        args = {'host':'127.0.0.1', 'user':'root','passwd':'xxxx','db':'mysql','port':3306,'charset':'utf8'}
 
         # Set extra connection parameters
         args['connect_timeout'] = timeout
