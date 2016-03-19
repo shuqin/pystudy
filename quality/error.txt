@@ -1,0 +1,14 @@
+Traceback (most recent call last):
+  File "batchrename_robust.py", line 57, in <module>
+    batchrename(dir_path, prefix="beauty_")
+  File "batchrename_robust.py", line 21, in batchrename
+    names = os.listdir(dir_path)
+OSError: [Errno 2] No such file or directory: '/home/lovesqcc/setupdir/scitools/pic/mmnet/beauty'
+
+IMG_0006.png rename to IMG_0002.png.
+IMG_0003.jpg rename to IMG_0003.jpg.
+IMG_0002.png rename to IMG_0004.png.
+IMG_0005.jpg rename to IMG_0005.jpg.
+IMG_0007.png rename to IMG_0006.png.
+
+python batchrename_robust_customized_extended.py -d /home/lovesqcc/setupdir/scitools/pic/fuzhuang/fz2/ /home/lovesqcc/setupdir/scitools/pic/fuzhuang/fz1  -p fz2 fz1 fzz -m NUM 1 5
