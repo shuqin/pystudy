@@ -15,7 +15,7 @@ import db
 
 globalFieldDescs = ('Field', 'Type', 'Null', 'Key', 'Default', 'Extra')
 
-globalDescFile = 'desc.txt'
+globalDescFile = '../data/desc.txt'
 
 conflictedWithMysqlKeywords = set(['group'])
 
@@ -90,7 +90,7 @@ def main():
 
     descFile = open(globalDescFile, 'w')
 
-    mydb = db.Mydb()
+    mydb = db.Systemdb()
     desc = descDb(mydb)
     descFile.write(desc.encode('utf-8'))
 

@@ -78,13 +78,13 @@ See test_main() method for more examples.
 from database import DB
 
 
-class Houyidb(DB):
+class Mydb(DB):
     '''A simple query interface of houyidb.'''
     def __init__(self, read_only = True, auto_commit = False,
                  timeout = 5, auto_connect = False, max_idle_time = 28800):
-        '''Initialize the Houyidb object.'''
+        '''Initialize the Mydb object.'''
         # Get the database parameters
-        args = {'host':'127.0.0.1', 'user':'root','passwd':'123456','db':'houyidb','port':3306,'charset':'utf8'}
+        args = {'host':'127.0.0.1', 'user':'root','passwd':'lovesqcc','db':'goodcode','port':3306,'charset':'utf8'}
 
         # Set extra connection parameters
         args['connect_timeout'] = timeout
@@ -96,14 +96,14 @@ class Houyidb(DB):
 
 
 
-class Houyi(DB):
-    '''A simple query interface of houyi.'''
+class Systemdb(DB):
+    '''A simple query interface of Systemdb.'''
     def __init__(self, read_only = True,
                  auto_commit = False, timeout = 5, auto_connect = False,
                  max_idle_time = 28800):
-        '''Initialize the Houyi object.'''
+        '''Initialize the Systemdb object.'''
         # Get the database parameters
-        args = {'host':'127.0.0.1', 'user':'root','passwd':'123456','db':'houyi','port':3306,'charset':'utf8'}
+        args = {'host':'127.0.0.1', 'user':'root','passwd':'lovesqcc','db':'mysql','port':3306,'charset':'utf8'}
 
         # Set extra connection parameters
         args['connect_timeout'] = timeout
@@ -112,23 +112,4 @@ class Houyi(DB):
         args['auto_connect'] = auto_connect
 
         DB.__init__(self, **args)
-
-class Houyiregiondb(DB):
-    '''A simple query interface of houyiregiondb.'''
-    def __init__(self, read_only = True,
-                 auto_commit = False, timeout = 5, auto_connect = False,
-                 max_idle_time = 28800):
-        '''Initialize the Houyiregiondb object.'''
-        # Get the database parameters
-        args = {'host':'127.0.0.1', 'user':'root','passwd':'123456','db':'houyiregiondb','port':3306,'charset':'utf8'}
-
-        # Set extra connection parameters
-        args['connect_timeout'] = timeout
-        args['auto_commit'] = auto_commit
-        args['max_idle_time'] = max_idle_time
-        args['auto_connect'] = auto_connect
-
-        DB.__init__(self, **args)
-
-
 
