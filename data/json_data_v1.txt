@@ -1,0 +1,34 @@
+{
+    "code": 200, 
+    "msg": "ok", 
+    "list": [
+        {
+            "id": 20, 
+            "no": "1000020", 
+            "items": [
+                {
+                    "name": "n1", 
+                    "price": 21, 
+                    "infos": {
+                        "feature": ""
+                    }
+                }
+            ]
+        }
+    ], 
+    "metainfo": {
+        "total": 20, 
+        "info": {
+            "owner": "qinshu", 
+            "parts": [
+                {
+                    "count": 13, 
+                    "time": {
+                        "start": 1230002456, 
+                        "end": 234001234
+                    }
+                }
+            ]
+        }
+    }
+}
