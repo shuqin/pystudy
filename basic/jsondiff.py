@@ -1,10 +1,22 @@
+#!/usr/bin/python
 #_*_encoding:utf-8_*_
+
+import argparse
 
 import json
 import sys
 
 reload(sys)
 sys.setdefaultencoding('utf-8')
+
+def parseArgs():
+    description = 'This program is used to output the differences of keys of two json data.'
+    parser = argparse.ArgumentParser(description=description)
+    parser.add_argument('file', help='Given file containing two json data separated by a new line with three semicolons.')
+    args = parser.parse_args()
+    filename = args.file
+    return filename 
+        
 
 def readFile(filename):
     content = ''
@@ -128,8 +140,11 @@ if __name__ == "__main__":
     
     test()
 
-    content1 = readFile("../data/json_data_v1.txt")
-    content2 = readFile("../data/json_data_v2.txt")
+    filename = parseArgs()
+    content = readFile(filename)
+    jsondataArr = content.split(';;;')
+    content1 = jsondataArr[0]
+    content2 = jsondataArr[1]
     json1 = json.loads(content1)
     json2 = json.loads(content2)
 
@@ -142,5 +157,3 @@ if __name__ == "__main__":
     print 'keys in json_data_v2 yet not in json_data_v1: '
     print diffKeys(json2, json1)
     
-    diffJsonToFile('../data/diff_v1tov2.txt', json1, json2)
-    diffJsonToFile('../data/diff_v2tov1.txt', json2, json1) 

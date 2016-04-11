@@ -1,0 +1,81 @@
+{
+    "code": 200, 
+    "msg": "ok", 
+    "list": [
+        {
+            "id": 20, 
+            "no": "1000020", 
+            "items": [
+                {
+                    "name": "n1", 
+                    "price": 21, 
+                    "infos": {
+                        "feature": ""
+                    }
+                }
+            ]
+        }
+    ], 
+    "metainfo": {
+        "total": 20, 
+        "info": {
+            "owner": "qinshu", 
+            "parts": [
+                {
+                    "count": 13, 
+                    "time": {
+                        "start": 1230002456, 
+                        "end": 234001234
+                    }
+                }
+            ]
+        }
+    }
+}
+
+;;; 
+
+{
+    "code": 200,
+    "msg": "ok",
+    "success": true,
+    "list": [
+        {
+            "id": 22,
+            "no": "1000020",
+            "items": [
+                {
+                    "name": "n1",
+                    "price": 21,
+                    "comment": "very nice",
+                    "infos": {
+                        "feature": ""
+                    }
+                },
+                {
+                    "name": "n2",
+                    "price": 22,
+                    "comment": "good",
+                    "infos": {
+                        "feature": "small"
+                    }
+                }
+            ]
+        }
+    ],
+    "metainfo": {
+        "total": 20,
+        "info": {
+            "owner": "qinshu",
+            "parts": [
+                {
+                    "count": 15,
+                    "range": {
+                        "start": 1230003456,
+                        "end": 234007890
+                    }
+                }
+            ]
+        }
+    }
+}
