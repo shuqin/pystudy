@@ -1,10 +1,21 @@
 #_*_encoding:utf-8_*_
 
+import argparse
+
 import json
 import sys
 
 reload(sys)
 sys.setdefaultencoding('utf-8')
+
+def parseArgs():
+    description = 'This program is used to give a contrast of two json data.'
+    parser = argparse.ArgumentParser(description=description)
+    parser.add_argument('file', help='Given file containing two json data separated by a new line with three semicolons.')
+    args = parser.parse_args()
+    filename = args.file
+    return filename 
+        
 
 def readFile(filename):
     content = ''
@@ -128,8 +139,10 @@ if __name__ == "__main__":
     
     test()
 
-    content1 = readFile("../data/json_data_v1.txt")
-    content2 = readFile("../data/json_data_v2.txt")
+    filename = parseArgs()
+    content = readFile(filename)
+    content1 = content.split(';;;')[0]
+    content2 = content.split(';;;')[1]
     json1 = json.loads(content1)
     json2 = json.loads(content2)
 
