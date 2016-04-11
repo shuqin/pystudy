@@ -1,0 +1,419 @@
+{
+
+    "code": 0, 
+
+    "msg": "ok", 
+
+    "data": {
+
+        "list": [
+
+            {
+
+                "id": "14357924", 
+
+                "order_no": "E20160331153546078220317", 
+
+                "kdt_id": "16264535", 
+
+                "customer_id": "1131271967", 
+
+                "customer_name": "", 
+
+                "customer_type": "9", 
+
+                "buyer_id": "126927510", 
+
+                "buyer_phone": "", 
+
+                "tourist": "0q76gb0i9p5d5i8og3d90a03m1", 
+
+                "state": 100, 
+
+                "stock_state": 1, 
+
+                "pay_state": "1", 
+
+                "express_state": "2", 
+
+                "feedback": 0, 
+
+                "refund_state": 0, 
+
+                "close_state": 0, 
+
+                "order_type": "0", 
+
+                "express_type": "0", 
+
+                "buy_way": "28", 
+
+                "normal": "0", 
+
+                "has_child": "0", 
+
+                "update_time": "1459845848", 
+
+                "book_time": "2016-03-31 15:35:46", 
+
+                "expire_time": "1459413346", 
+
+                "pay_time": "2016-03-31 15:38:19", 
+
+                "express_time": "2016-04-01 09:41:33", 
+
+                "feedback_time": "", 
+
+                "refund_time": "", 
+
+                "success_time": "2016-04-05 16:44:08", 
+
+                "close_time": "", 
+
+                "currency": "1", 
+
+                "payment_id": "88904", 
+
+                "pay": "53.80", 
+
+                "postage": "0.00", 
+
+                "real_pay": "53.80", 
+
+                "refund_pay": "0", 
+
+                "bank_pay": "0", 
+
+                "outer_transaction_number": "", 
+
+                "use_ump": "1", 
+
+                "is_free_postage": "1", 
+
+                "items": [
+
+                    {
+
+                        "id": "17891134", 
+
+                        "kdt_id": "16264535", 
+
+                        "order_no": "E20160331153546078220317", 
+
+                        "goods_type": "0", 
+
+                        "sku_id": "35925257", 
+
+                        "sku": [
+
+                            {
+
+                                "k_id": "14", 
+
+                                "k": "规格", 
+
+                                "v_id": "30866", 
+
+                                "v": "3袋装"
+
+                            }
+
+                        ], 
+
+                        "s1": "30866", 
+
+                        "s2": "0", 
+
+                        "s3": "0", 
+
+                        "s4": "0", 
+
+                        "s5": "0", 
+
+                        "price": "24.90", 
+
+                        "pay_price": "24.90", 
+
+                        "postage": "0.00", 
+
+                        "num": "1", 
+
+                        "goods_info": {
+
+                            "is_virtual": 0, 
+
+                            "supplier_goods_id": 0, 
+
+                            "img_url": "https://dn-kdt-img.qbox.me/upload_files/2016/03/28/Fqprc-Q49j8R7oo0uuFGx3RaygRR.jpg", 
+
+                            "supplier_kdt_id": 0, 
+
+                            "quota": 0, 
+
+                            "goods_no": "甘栗", 
+
+                            "extra": {
+
+                                "is_present": 0
+
+                            }, 
+
+                            "alias": "3eve93r2ptynb", 
+
+                            "buy_way": 1, 
+
+                            "title": "【良品铺子】甘栗   80g／袋", 
+
+                            "mark": 0
+
+                        }, 
+
+                        "goods_id": "236855996", 
+
+                        "shop_id": "16264535", 
+
+                        "shop_info": {
+
+                            "shop_name": "包罗万象007"
+
+                        }, 
+
+                        "message": [ ], 
+
+                        "sku_code": "甘栗3袋装", 
+
+                        "delivery_template_id": "0", 
+
+                        "use_ump": "0", 
+
+                        "is_present": "0", 
+
+                        "is_visual": "0", 
+
+                        "goods_snap": "", 
+
+                        "created": "1459409746", 
+
+                        "item_id": "17891134", 
+
+                        "title": "【良品铺子】甘栗   80g／袋", 
+
+                        "alias": "3eve93r2ptynb", 
+
+                        "url": "https://wap.koudaitong.com/v2/showcase/goods?alias=3eve93r2ptynb", 
+
+                        "goods_url": "https://wap.koudaitong.com/v2/showcase/goods?alias=3eve93r2ptynb", 
+
+                        "image_url": "http://dn-kdt-img.qbox.me/upload_files/2016/03/28/Fqprc-Q49j8R7oo0uuFGx3RaygRR.jpg", 
+
+                        "shipment": 0, 
+
+                        "is_reviews": 0
+
+                    }, 
+
+                    {
+
+                        "id": "17891135", 
+
+                        "kdt_id": "16264535", 
+
+                        "order_no": "E20160331153546078220317", 
+
+                        "goods_type": "0", 
+
+                        "sku_id": "35920202", 
+
+                        "sku": [
+
+                            {
+
+                                "k_id": "2", 
+
+                                "k": "尺寸", 
+
+                                "v_id": "6041670", 
+
+                                "v": "425g零食组合"
+
+                            }
+
+                        ], 
+
+                        "s1": "6041670", 
+
+                        "s2": "0", 
+
+                        "s3": "0", 
+
+                        "s4": "0", 
+
+                        "s5": "0", 
+
+                        "price": "28.90", 
+
+                        "pay_price": "28.90", 
+
+                        "postage": "0.00", 
+
+                        "num": "1", 
+
+                        "goods_info": {
+
+                            "is_virtual": 0, 
+
+                            "supplier_goods_id": 0, 
+
+                            "img_url": "https://dn-kdt-img.qbox.me/upload_files/2016/03/28/Fro6dvmIlkowq0YbUwFwxT6yzKpH.jpg", 
+
+                            "supplier_kdt_id": 0, 
+
+                            "quota": 0, 
+
+                            "goods_no": "425g零食组合", 
+
+                            "extra": {
+
+                                "is_present": 0
+
+                            }, 
+
+                            "alias": "2xbfrcqudxd53", 
+
+                            "buy_way": 1, 
+
+                            "title": "【良品铺子】梅子组合罐装425g迷你话梅粒珍珠梅老婆梅组合零食", 
+
+                            "mark": 0
+
+                        }, 
+
+                        "goods_id": "236822263", 
+
+                        "shop_id": "16264535", 
+
+                        "shop_info": {
+
+                            "shop_name": "包罗万象007"
+
+                        }, 
+
+                        "message": [ ], 
+
+                        "sku_code": "425g零食组合", 
+
+                        "delivery_template_id": "0", 
+
+                        "use_ump": "0", 
+
+                        "is_present": "0", 
+
+                        "is_visual": "0", 
+
+                        "goods_snap": "", 
+
+                        "created": "1459409746", 
+
+                        "item_id": "17891135", 
+
+                        "title": "【良品铺子】梅子组合罐装425g迷你话梅粒珍珠梅老婆梅组合零食", 
+
+                        "alias": "2xbfrcqudxd53", 
+
+                        "url": "https://wap.koudaitong.com/v2/showcase/goods?alias=2xbfrcqudxd53", 
+
+                        "goods_url": "https://wap.koudaitong.com/v2/showcase/goods?alias=2xbfrcqudxd53", 
+
+                        "image_url": "http://dn-kdt-img.qbox.me/upload_files/2016/03/28/Fro6dvmIlkowq0YbUwFwxT6yzKpH.jpg", 
+
+                        "shipment": 0, 
+
+                        "is_reviews": 0
+
+                    }
+
+                ], 
+
+                "customer_province": "", 
+
+                "customer_city": "", 
+
+                "sex": "", 
+
+                "is_fans": "", 
+
+                "customer_sex": "", 
+
+                "customer": "1131271967", 
+
+                "customer_info": [ ], 
+
+                "pay_no_postage": "53.80", 
+
+                "original_real_pay": "5380", 
+
+                "change_express": 0, 
+
+                "buy_way_str": "有赞E卡通", 
+
+                "created_time": "", 
+
+                "use_time": "", 
+
+                "user_name": "", 
+
+                "tel": "", 
+
+                "express_id": 0, 
+
+                "express_no": "", 
+
+                "express_name": "", 
+
+                "express": [ ], 
+
+                "state_str": "交易完成", 
+
+                "feedback_str": "", 
+
+                "close_state_str": "交易完成", 
+
+                "order_state": "sign", 
+
+                "self_fetch": [ ], 
+
+                "has_fenxao_goods": 0, 
+
+                "kind": 2, 
+
+                "num": 2, 
+
+                "isAllowLaterReceive": false, 
+
+                "isAllowConfirmReceive": false, 
+
+                "refund_type": 0, 
+
+                "gift_order_status": 0, 
+
+                "gift_drawback_open": 0, 
+
+                "gift_drawback_num": 0, 
+
+                "gift_drawback_price": 0, 
+
+                "detail_url": "http://trade.koudaitong.com/trade/order/result?order_no=E20160331153546078220317&kdt_id=16264535", 
+
+                "confirm_url": "http://trade.koudaitong.com/wxpay/pay?order_no=E20160331153546078220317&kdt_id=16264535", 
+
+                "is_show_review": 1, 
+
+                "has_all_reviewed": 0
+
+            }
+
+        ]
+
+    }
+
+}
