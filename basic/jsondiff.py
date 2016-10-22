@@ -1,3 +1,4 @@
+#!/usr/bin/python
 #_*_encoding:utf-8_*_
 
 import argparse
@@ -141,8 +142,9 @@ if __name__ == "__main__":
 
     filename = parseArgs()
     content = readFile(filename)
-    content1 = content.split(';;;')[0]
-    content2 = content.split(';;;')[1]
+    jsondataArr = content.split(';;;')
+    content1 = jsondataArr[0]
+    content2 = jsondataArr[1]
     json1 = json.loads(content1)
     json2 = json.loads(content2)
 
