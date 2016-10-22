@@ -9,7 +9,7 @@ reload(sys)
 sys.setdefaultencoding('utf-8')
 
 def parseArgs():
-    description = 'This program is used to give a contrast of two json data.'
+    description = 'This program is used to output the differences of keys of two json data.'
     parser = argparse.ArgumentParser(description=description)
     parser.add_argument('file', help='Given file containing two json data separated by a new line with three semicolons.')
     args = parser.parse_args()
@@ -155,5 +155,3 @@ if __name__ == "__main__":
     print 'keys in json_data_v2 yet not in json_data_v1: '
     print diffKeys(json2, json1)
     
-    diffJsonToFile('../data/diff_v1tov2.txt', json1, json2)
-    diffJsonToFile('../data/diff_v2tov1.txt', json2, json1) 
