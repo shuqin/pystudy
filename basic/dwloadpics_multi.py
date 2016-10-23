@@ -1,17 +1,23 @@
-#!/usr/bin/python
 #_*_encoding:utf-8_*_
+#!/usr/bin/python
 
 import os
 import re
 import sys
+from multiprocessing import (cpu_count, Pool)
 from multiprocessing.dummy import Pool as ThreadPool
 
 import requests
 from bs4 import BeautifulSoup
 
-saveDir = os.environ['HOME'] + '/joy/pic/pconline/nature'
-
+ncpus = cpu_count()
+saveDir = os.environ['HOME'] + '/joy/pic/pconline'
 dwpicPool = ThreadPool(20)
+getUrlPool = ThreadPool(20)
+
+def createDir(dirName):
+    if not os.path.exists(dirName):
+        os.makedirs(dirName)
 
 def catchExc(func):
     def _deco(*args, **kwargs):
@@ -30,22 +36,16 @@ def batchGetSoups(urls):
            in order to parse what i want later
     '''
 
-    print "urls: ", urls
     urlnum = len(urls)
     if urlnum == 0:
         return []
 
-    getUrlPool = ThreadPool(urlnum)
-    results = []
-    for i in range(urlnum):
-        print 'url: ', urls[i]
-        results.append(getUrlPool.apply_async(requests.get, (urls[i], )))
-    getUrlPool.close()
-    getUrlPool.join()
+    results = getUrlPool.map(requests.get, urls)
 
     soups = []
     for res in results:
-        r = res.get(timeout=1) 
+        #r = res.get(timeout=1) 
+        r = res
         status = r.status_code
 
         if status != 200:
@@ -72,9 +72,7 @@ def buildSubUrl(href, ind):
         http://dp.pconline.com.cn/photo/3687736_[1-10].html
     which contain the origin href of picture
     '''
-    suburl = href.rsplit('.', 1)[0] + "_" + str(ind) + '.html' 
-    print 'suburl: ', suburl
-    return suburl
+    return href.rsplit('.', 1)[0] + "_" + str(ind) + '.html' 
 
 @catchExc 
 def downloadPic(piclink):
@@ -123,6 +121,7 @@ def downloadAllForAPage(entryurl):
        download serial pics in a page
     '''
 
+    print 'entryurl: ', entryurl
     soups = batchGetSoups([entryurl])
     if len(soups) == 0:
         return
@@ -133,20 +132,65 @@ def downloadAllForAPage(entryurl):
     if len(picLinks) == 0:
         return
     hrefs = map(lambda link: link.attrs['href'], picLinks)
-    print 'serials in a page: ', len(hrefs)
 
     for serialHref in hrefs: 
         downloadForASerial(serialHref)
 
-def downloadAll(serial_num, start, end):
+def downloadAll(serial_num, start, end, taskPool=None):
     entryUrl = 'http://dp.pconline.com.cn/list/all_t%d_p%d.html'
     entryUrls = [ (entryUrl % (serial_num, ind)) for ind in range(start, end+1)]
-    taskpool = ThreadPool(20)
-    taskpool.map_async(downloadAllForAPage, entryUrls)
-    taskpool.close()
-    taskpool.join()
+    execDownloadTask(entryUrls, taskPool)
+
+def execDownloadTask(entryUrls, taskPool=None):
+    if taskPool:
+        taskPool.addDownloadTask(entryUrls)
+    else:
+        for entryurl in entryUrls:
+            downloadAllForAPage(entryurl)
+
+def divideNParts(total, N):                                                                                                                          
+    '''
+       divide [0, total) into N parts:
+        return [(0, total/N), (total/N, 2M/N), ((N-1)*total/N, total)]
+    '''
+     
+    each = total / N
+    parts = []
+    for index in range(N):
+        begin = index*each
+        if index == N-1:
+            end = total
+        else:
+            end = begin + each
+        parts.append((begin, end))
+    return parts
+
+class TaskProcessPool():
+    def __init__(self):
+        self.taskPool = Pool(processes=ncpus)
+
+    def addDownloadTask(self, entryUrls):
+        self.taskPool.map_async(downloadAllForAPage, entryUrls)
+
+    def close(self):
+        self.taskPool.close()
+
+    def join(self):
+        self.taskPool.join()
 
 if __name__ == '__main__':
-    serial_num = 145
-    downloadAll(serial_num, 1, 2)
+    createDir(saveDir)
+    taskPool = TaskProcessPool()
 
+    serial_num = 601
+    offset = 20
+    end = 10
+    nparts = divideNParts(end, 5)
+    npartsWithOffset = [(t[0]+offset, t[1]+offset) for t in nparts]
+
+    for part in npartsWithOffset:
+        start = part[0]+1
+        end = part[1]
+        downloadAll(serial_num, start, end, taskPool=None)
+    taskPool.close()
+    taskPool.join()
