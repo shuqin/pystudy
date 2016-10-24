@@ -11,9 +11,7 @@ import requests
 from bs4 import BeautifulSoup
 
 ncpus = cpu_count()
-saveDir = os.environ['HOME'] + '/joy/pic/pconline'
-dwpicPool = ThreadPool(20)
-getUrlPool = ThreadPool(20)
+saveDir = os.environ['HOME'] + '/joy/pic/test'
 
 def createDir(dirName):
     if not os.path.exists(dirName):
@@ -28,32 +26,105 @@ def catchExc(func):
             return None
     return _deco
 
+class IoTaskThreadPool(object):
+    '''
+       thread pool for io operations
+    '''
+    def __init__(self, poolsize):
+        self.ioPool = ThreadPool(poolsize)
+    
+    def execTasks(self, ioFunc, ioParams):
+        if not ioParams or len(ioParams) == 0:
+            return []
+        return self.ioPool.map(ioFunc, ioParams)
+
+    def execTasksAsync(self, ioFunc, ioParams):      
+        if not ioParams or len(ioParams) == 0:  
+            return []                           
+        self.ioPool.map_async(ioFunc, ioParams)
+
+class TaskProcessPool():
+    '''
+       process pool for cpu operations or task assignment
+    '''
+    def __init__(self):           
+        self.taskPool = Pool(processes=ncpus)
+                                  
+    def addDownloadTask(self, entryUrls):
+        self.taskPool.map_async(downloadAllForAPage, entryUrls)
+                                  
+    def close(self):              
+        self.taskPool.close()     
+                                  
+    def join(self):               
+        self.taskPool.join()
+
+def getHTMLContentFromUrl(url):
+    '''
+       get html content from html url
+    '''
+    r = requests.get(url)
+    status = r.status_code
+    if status != 200:
+        return ''
+    return r.text
+
+def batchGrapHtmlContents(urls):
+    '''
+       batch get the html contents of urls
+    '''
+    global grapHtmlPool
+    return grapHtmlPool.execTasks(getHTMLContentFromUrl, urls)
+
+def findWantedLinks(htmlcontent, rules):
+    '''
+       find html links or pic links from html by rules.
+       rules such as:
+          (1) a link with id=[value1,value2,...]
+          (2) a link with class=[value1,value2,...]
+          (3) img with src=xxx.jpg|png|...
+          rules is map containing rule such as:
+              {
+                 'id': [id1, id2, ..., idn],
+                 'class': [c1, c2, ..., cn],
+                 'img': ['jpg', 'png', ... ]
+              }
+                 
+    '''
+    soup = BeautifulSoup(htmlcontent, "lxml")
+    alinks = []
+    imglinks = []
+    for (key, values) in rules.iteritems():
+        if key == 'id':
+            for id in values:
+                alinks.extend(soup.find_all('a', id=id))
+        elif key == 'class':
+            for cls in values:
+                alinks.extend(soup.find_all('a', class_=cls))
+        elif key == 'img':
+                imglinks.extend(soup.find_all('img', src=re.compile(".jpg")))
+    
+    allLinks = []
+    allLinks.extend(map(lambda link: link.attrs['href'], alinks))
+    allLinks.extend(map(lambda img: img.attrs['src'], imglinks))
+    return allLinks
+
+def batchGetLinksByRules(htmlcontentList, rules):
+    '''
+       find all html links or pic links from html content list by rules 
+    '''
+    links = []
+    for htmlcontent in htmlcontentList:
+        links.extend(findWantedLinks(htmlcontent, rules))
+    return links
 
 @catchExc
 def batchGetSoups(urls):
     '''
-       get the html content of url and transform into soup object 
+       batch transform list of html content into list of soup object 
            in order to parse what i want later
     '''
-
-    urlnum = len(urls)
-    if urlnum == 0:
-        return []
-
-    results = getUrlPool.map(requests.get, urls)
-
-    soups = []
-    for res in results:
-        #r = res.get(timeout=1) 
-        r = res
-        status = r.status_code
-
-        if status != 200:
-            continue
-        resp = r.text
-        soup = BeautifulSoup(resp, "lxml")
-        soups.append(soup)
-    return soups
+    return map(lambda resp: BeautifulSoup(resp, "lxml"), batchGrapHtmlContents(urls))
 
 @catchExc 
 def parseTotal(soup):
@@ -114,7 +185,9 @@ def downloadForASerial(serialHref):
     picUrls = map(getOriginPicLink, subsoups)
     picSoups = batchGetSoups(picUrls)
     piclinks = map(lambda picsoup: picsoup.find('img', src=re.compile(".jpg")), picSoups)
-    dwpicPool.map_async(downloadPic, piclinks) 
+
+    global dwPicPool
+    dwPicPool.execTasksAsync(downloadPic, piclinks) 
 
 def downloadAllForAPage(entryurl):
     '''
@@ -165,27 +238,31 @@ def divideNParts(total, N):
         parts.append((begin, end))
     return parts
 
-class TaskProcessPool():
-    def __init__(self):
-        self.taskPool = Pool(processes=ncpus)
-
-    def addDownloadTask(self, entryUrls):
-        self.taskPool.map_async(downloadAllForAPage, entryUrls)
-
-    def close(self):
-        self.taskPool.close()
-
-    def join(self):
-        self.taskPool.join()
+def testBatch():
+    urls = ['http://dp.pconline.com.cn/list/all_t145.html', 'http://dp.pconline.com.cn/list/all_t292.html']
+    htmlcontentList = map(getHTMLContentFromUrl, urls)
+    rules = {'img':['jpg'], 'class':['picLink'], 'id': ['HidenDataArea']}
+    allLinks = batchGetLinksByRules(htmlcontentList, rules)
+    for link in allLinks:                                  
+        print link
 
 if __name__ == '__main__':
+
+    testBatch()
+
     createDir(saveDir)
     taskPool = TaskProcessPool()
+    
+    global grapHtmlPool
+    grapHtmlPool = IoTaskThreadPool(20)
+
+    global dwPicPool
+    dwPicPool = IoTaskThreadPool(20)
 
     serial_num = 601
-    offset = 20
-    end = 10
-    nparts = divideNParts(end, 5)
+    offset = 30
+    end = 4
+    nparts = divideNParts(end, 1)
     npartsWithOffset = [(t[0]+offset, t[1]+offset) for t in nparts]
 
     for part in npartsWithOffset:
