@@ -43,6 +43,12 @@ class IoTaskThreadPool(object):
             return []                           
         self.ioPool.map_async(ioFunc, ioParams)
 
+    def close(self):
+        self.ioPool.close()
+
+    def join(self):
+        self.ioPool.join()
+
 class TaskProcessPool():
     '''
        process pool for cpu operations or task assignment
@@ -158,17 +164,16 @@ def downloadFromPconline(serial_num, start, end):
     dwPicPool.execTasksAsync(downloadPic, picOriginAddresses)
 
 @catchExc 
-def downloadPic(piclink):
+def downloadPic(picsrc):
     '''
        download pic from pic href such as 
             http://img.pconline.com.cn/images/upload/upc/tx/photoblog/1610/21/c9/28691979_1477032141707.jpg
     '''
 
-    picsrc = piclink.attrs['src']
     picname = picsrc.rsplit('/',1)[1]
     saveFile = saveDir + '/' + picname
 
-    picr = requests.get(piclink.attrs['src'], stream=True)
+    picr = requests.get(picsrc, stream=True)
     with open(saveFile, 'wb') as f:
         for chunk in picr.iter_content(chunk_size=1024):  
             if chunk:
@@ -214,3 +219,5 @@ if __name__ == '__main__':
     dwPicPool = IoTaskThreadPool(20)
 
     downloadFromPconline(145, 1, 2) 
+    dwPicPool.close()
+    dwPicPool.join()
