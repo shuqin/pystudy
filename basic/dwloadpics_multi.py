@@ -76,25 +76,26 @@ def batchGrapHtmlContents(urls):
     global grapHtmlPool
     return grapHtmlPool.execTasks(getHTMLContentFromUrl, urls)
 
-def findWantedLinks(htmlcontent, rules):
+def findWantedLinks(htmlcontent, rule):
     '''
-       find html links or pic links from html by rules.
-       rules such as:
+       find html links or pic links from html by rule.
+       sub rules such as:
           (1) a link with id=[value1,value2,...]
           (2) a link with class=[value1,value2,...]
           (3) img with src=xxx.jpg|png|...
-          rules is map containing rule such as:
-              {
-                 'id': [id1, id2, ..., idn],
-                 'class': [c1, c2, ..., cn],
-                 'img': ['jpg', 'png', ... ]
-              }
+       a rule is map containing sub rule such as:
+          {
+              'id': [id1, id2, ..., idn],
+              'class': [c1, c2, ..., cn],
+              'img': ['jpg', 'png', ... ]
+          }
                  
     '''
+
     soup = BeautifulSoup(htmlcontent, "lxml")
     alinks = []
     imglinks = []
-    for (key, values) in rules.iteritems():
+    for (key, values) in rule.iteritems():
         if key == 'id':
             for id in values:
                 alinks.extend(soup.find_all('a', id=id))
@@ -102,48 +103,59 @@ def findWantedLinks(htmlcontent, rules):
             for cls in values:
                 alinks.extend(soup.find_all('a', class_=cls))
         elif key == 'img':
-                imglinks.extend(soup.find_all('img', src=re.compile(".jpg")))
+            for picSuffix in values:
+                imglinks.extend(soup.find_all('img', src=re.compile(picSuffix)))
     
     allLinks = []
     allLinks.extend(map(lambda link: link.attrs['href'], alinks))
     allLinks.extend(map(lambda img: img.attrs['src'], imglinks))
     return allLinks
 
-def batchGetLinksByRules(htmlcontentList, rules):
+def batchGetLinksByRule(htmlcontentList, rule):
     '''
-       find all html links or pic links from html content list by rules 
+       find all html links or pic links from html content list by rule
     '''
+
     links = []
     for htmlcontent in htmlcontentList:
-        links.extend(findWantedLinks(htmlcontent, rules))
+        links.extend(findWantedLinks(htmlcontent, rule))
     return links
 
-@catchExc
-def batchGetSoups(urls):
+def defineResRulePath():
     '''
-       batch transform list of html content into list of soup object 
-           in order to parse what i want later
+        return the rule path from init htmls to the origin addresses of pics
+        if we find the origin addresses of pics by 
+        init htmls --> grap htmlcontents --> rules1 --> intermediate htmls 
+           --> grap htmlcontents --> rules2 --> intermediate htmls
+           --> grap htmlcontents --> rules3 --> origin addresses of pics
+        we say the rulepath is [rules1, rules2, rules3] 
     '''
-    return map(lambda resp: BeautifulSoup(resp, "lxml"), batchGrapHtmlContents(urls))
+    return []
 
-@catchExc 
-def parseTotal(soup):
-    '''
-      parse total number of pics in html tag <span class="totPic"> (1/total)</span>
-    '''
-    totalNode = soup.find('span', class_='totPics')
-    total = int(totalNode.text.split('/')[1].replace(')',''))
-    return total
+def definePconlineResRulePath():
+    return [{'class': ['picLink']}, {'class':['aView aViewHD']}, {'img': ['jpg']}]
 
-@catchExc 
-def buildSubUrl(href, ind):
+
+def findOriginAddressesByRulePath(initUrls, rulePath):
     '''
-    if href is http://dp.pconline.com.cn/photo/3687736.html, total is 10
-    then suburl is
-        http://dp.pconline.com.cn/photo/3687736_[1-10].html
-    which contain the origin href of picture
+       find Origin Addresses of pics by rulePath started from initUrls
     '''
-    return href.rsplit('.', 1)[0] + "_" + str(ind) + '.html' 
+    result = initUrls[:]
+    for rule in rulePath:
+        htmlContents = batchGrapHtmlContents(result)
+        links = batchGetLinksByRule(htmlContents, rule)
+        result = []
+        result.extend(links)
+    return result
+
+def downloadFromPconline(serial_num, start, end):
+    entryUrl = 'http://dp.pconline.com.cn/list/all_t%d_p%d.html'
+    entryUrls = [ (entryUrl % (serial_num, ind)) for ind in range(start, end+1)]
+    rulePath = definePconlineResRulePath()
+    picOriginAddresses = findOriginAddressesByRulePath(entryUrls, rulePath)
+
+    global dwPicPool
+    dwPicPool.execTasksAsync(downloadPic, picOriginAddresses)
 
 @catchExc 
 def downloadPic(piclink):
@@ -163,63 +175,6 @@ def downloadPic(piclink):
                 f.write(chunk)
                 f.flush() 
     f.close()
-
-@catchExc
-def getOriginPicLink(subsoup):
-    hdlink = subsoup.find('a', class_='aView aViewHD')
-    return hdlink.attrs['href']
-
-@catchExc 
-def downloadForASerial(serialHref):
-    '''
-       download a serial of pics  
-    '''
-
-    href = serialHref
-    subsoups = batchGetSoups([href])
-    total = parseTotal(subsoups[0])
-    print 'href: %s *** total: %s' % (href, total)
-   
-    suburls = [buildSubUrl(href, ind) for ind in range(1, total+1)]
-    subsoups = batchGetSoups(suburls)
-    picUrls = map(getOriginPicLink, subsoups)
-    picSoups = batchGetSoups(picUrls)
-    piclinks = map(lambda picsoup: picsoup.find('img', src=re.compile(".jpg")), picSoups)
-
-    global dwPicPool
-    dwPicPool.execTasksAsync(downloadPic, piclinks) 
-
-def downloadAllForAPage(entryurl):
-    '''
-       download serial pics in a page
-    '''
-
-    print 'entryurl: ', entryurl
-    soups = batchGetSoups([entryurl])
-    if len(soups) == 0:
-        return
-
-    soup = soups[0] 
-    #print soup.prettify()
-    picLinks = soup.find_all('a', class_='picLink')
-    if len(picLinks) == 0:
-        return
-    hrefs = map(lambda link: link.attrs['href'], picLinks)
-
-    for serialHref in hrefs: 
-        downloadForASerial(serialHref)
-
-def downloadAll(serial_num, start, end, taskPool=None):
-    entryUrl = 'http://dp.pconline.com.cn/list/all_t%d_p%d.html'
-    entryUrls = [ (entryUrl % (serial_num, ind)) for ind in range(start, end+1)]
-    execDownloadTask(entryUrls, taskPool)
-
-def execDownloadTask(entryUrls, taskPool=None):
-    if taskPool:
-        taskPool.addDownloadTask(entryUrls)
-    else:
-        for entryurl in entryUrls:
-            downloadAllForAPage(entryurl)
 
 def divideNParts(total, N):                                                                                                                          
     '''
@@ -242,16 +197,15 @@ def testBatch():
     urls = ['http://dp.pconline.com.cn/list/all_t145.html', 'http://dp.pconline.com.cn/list/all_t292.html']
     htmlcontentList = map(getHTMLContentFromUrl, urls)
     rules = {'img':['jpg'], 'class':['picLink'], 'id': ['HidenDataArea']}
-    allLinks = batchGetLinksByRules(htmlcontentList, rules)
+    allLinks = batchGetLinksByRule(htmlcontentList, rules)
     for link in allLinks:                                  
         print link
 
 if __name__ == '__main__':
 
-    testBatch()
+    #testBatch()
 
     createDir(saveDir)
-    taskPool = TaskProcessPool()
     
     global grapHtmlPool
     grapHtmlPool = IoTaskThreadPool(20)
@@ -259,15 +213,4 @@ if __name__ == '__main__':
     global dwPicPool
     dwPicPool = IoTaskThreadPool(20)
 
-    serial_num = 601
-    offset = 30
-    end = 4
-    nparts = divideNParts(end, 1)
-    npartsWithOffset = [(t[0]+offset, t[1]+offset) for t in nparts]
-
-    for part in npartsWithOffset:
-        start = part[0]+1
-        end = part[1]
-        downloadAll(serial_num, start, end, taskPool=None)
-    taskPool.close()
-    taskPool.join()
+    downloadFromPconline(145, 1, 2) 
