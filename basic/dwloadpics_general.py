@@ -1,7 +1,7 @@
 #!/usr/bin/python
-#_*_encoding:utf-8_*_
 
 import os
+#_*_encoding:utf-8_*_
 import re
 import sys
 import json
@@ -22,7 +22,7 @@ def parseArgs():
                   '''
     parser = argparse.ArgumentParser(description=description)
     parser.add_argument('-u','--url', nargs='+', help='At least one html urls are required', required=True)
-    parser.add_argument('-g','--generate',nargs=2, help='Given range containing two number (start end) to generate more htmls if not empty ', required=False)
+    parser.add_argument('-g','--generate',nargs=3, help='Given range containing (start end suffix) to generate more htmls if not empty ', required=False)
     parser.add_argument('-r','--rulepath',nargs=1,help='rule path to search pictures. if not given, search pictures in given urls', required=False)
     args = parser.parse_args()
     init_urls = args.url
@@ -111,31 +111,6 @@ def getAbsLink(link):
     except:
         return ''
 
-def getTrueImgLink(imglink):
-    '''
-    get the true address of image link:
-        (1) the image link is http://img.zcool.cn/community/01a07057d1c2a40000018c1b5b0ae6.jpg@900w_1l_2o_100sh.jpg
-            but the better link is http://img.zcool.cn/community/01a07057d1c2a40000018c1b5b0ae6.jpg (removing what after @) 
-        (2) the image link is relative path /path/to/xxx.jpg
-            then the true link is serverDomain/path/to/xxx.jpg serverDomain is http://somedomain
-    '''
-
-    global serverDomain
-    try:
-        href = imglink.attrs['src']
-        if href.startswith('/'):
-            href = serverDomain + href
-        pos = href.find('jpg@')
-        if pos == -1:
-            return href
-        return href[0: pos+3] 
-    except:
-        return ''
-
-def batchGetImgTrueLink(imgLinks):
-    hrefs = map(getTrueImgLink, imgLinks)
-    return filter(lambda x: x!='', hrefs)
-
 def findWantedLinks(htmlcontent, rule):
     '''
        find html links or pic links from html by rule.
@@ -176,7 +151,7 @@ def findWantedLinks(htmlcontent, rule):
 
     allLinks = []
     allLinks.extend(alinks)
-    allLinks.extend(batchGetImgTrueLink(imglinks))
+    allLinks.extend(map(lambda img: img.attrs['src'], imglinks))
     return allLinks
 
 def batchGetLinksByRule(htmlcontentList, rule):
@@ -264,11 +239,9 @@ def testBatchGetLinks():
 
 def generateMoreInitUrls(init_urls, gene):
     '''
-      Generate more initial urls using init_urls and a range specified by gene
-      to generate urls, we give a base url containing a placeholder, then replace placeholder with number.
-       eg. 
-       base url:  http://xxx.yyy?k1=v1&k2=v2&page=placeholder -> http://xxx.yyy?k1=v1&k2=v2&page=[start-end]
-       base url is specified by -u option if -g is given.
+       two ways to generate urls:
+           a.  http://xxx.html -> http://xxx_suffix[start-end].html
+           b.  http://xxx.yyy?k1=v1&k2=v2 -> http://xxx.yyy?k1=v1&k2=v2suffix[start-end]
     '''
 
     if not gene:
@@ -276,12 +249,13 @@ def generateMoreInitUrls(init_urls, gene):
 
     start = int(gene[0])
     end = int(gene[1])
+    suffix = gene[2]
     truerange = map(lambda x: x+start, range(end-start+1))
-    resultUrls = []
-    for ind in truerange:
-        for url in init_urls:
-            resultUrls.append(url.replace('placeholder', str(ind)))
-    return resultUrls
+    if init_urls[0].endswith('.html'):
+        urlNames = map(lambda url: url.rsplit('.', 1)[0] , init_urls)
+        return [ urlName + suffix + str(ind) + '.html' for urlName in urlNames for ind in truerange ]
+    else:
+        return [ url + suffix + str(ind) for url in init_urls for ind in truerange ]
 
 def parseRulePathParam(rulepathjson):
     rulepath = [{'img': ['jpg', 'png']}]
@@ -296,7 +270,6 @@ def parseRulePathParam(rulepathjson):
 def parseServerDomain(url):
     parts = url.split('/',3)
     return parts[0] + '//' + parts[2]
-    sys.exit(0)
 
 
 if __name__ == '__main__':
@@ -305,7 +278,6 @@ if __name__ == '__main__':
 
     (init_urls, gene, rulepathjson) = parseArgs()
     moreInitUrls = generateMoreInitUrls(init_urls, gene)
-    print moreInitUrls
     rulepath = parseRulePathParam(rulepathjson)
     serverDomain = parseServerDomain(init_urls[0])
 
