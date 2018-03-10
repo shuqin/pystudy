@@ -140,7 +140,6 @@ def findOriginAddressesByRulePath(initUrls, rulePath):
 def downloadFromUrls(initUrls, rulePath):
     global dwResPool
     resOriginAddresses = findOriginAddressesByRulePath(initUrls, rulePath)
-    resOriginAddresses = ['http://tbm.alicdn.com/finGlEhIEgXec8b69jq/mqvtfdQSLc5Eg0Bt3HJ%40%40hd.mp4']
     dwResPool.execTasksAsync(download, resOriginAddresses)
 
 def testBatchGetLinks():
