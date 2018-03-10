@@ -16,10 +16,27 @@ from numpy import *
 import operator
 
 indicatorNumber = 3
+k = 5
 
+def createMoreSamplesFrom(filename, n):
+    datar = open(filename)
+    lines = datar.readlines()
+    datar.close()
+
+    lineNum = len(lines)
+    totalLines = lineNum * n
+    dataw = open('sample.txt', 'w')
+    for i in range(totalLines):
+        data = map (lambda x: int(x), lines[random.randint(0,lineNum)].strip().split())
+        (orderNumber, actualDeal, fans, classifierResult) = (data[0] + random.randint(0, 500), data[1] + random.randint(0, 500000), data[2] + random.randint(0, 100000), data[3])
+        dataw.write('%d %d %d %d\n' % (orderNumber, actualDeal, fans, classifierResult))  
+    dataw.close()
+ 
 def file2matrix(filename):
     dataf = open(filename)
     lines = dataf.readlines()
+    dataf.close()
+
     numOfLines = len(lines)
     dataMatrix = zeros((numOfLines, indicatorNumber))
     classLabelVector = []
@@ -67,12 +84,12 @@ def draw(data):
     #plot.show()
 
 def computeErrorRatio(dataMatrix, classLabelVector):
-    testRatio = 0.20
+    testRatio = 0.10
     totalRows = dataMatrix.shape[0]
     testRows = int(totalRows*testRatio)
     errorCount = 0
     for i in range(testRows):
-        classifierResult = classify(dataMatrix[i,:], dataMatrix[testRows:totalRows, :], classLabelVector[testRows:totalRows], 2)
+        classifierResult = classify(dataMatrix[i,:], dataMatrix[testRows:totalRows, :], classLabelVector[testRows:totalRows], k)
         print 'classify result: %d, the real result is %d' % (classifierResult, classLabelVector[i])
         if classifierResult != classLabelVector[i]:
             errorCount += 1.0
@@ -84,10 +101,11 @@ def classifyInstance(dataMatrix,classLabelVector, ranges, minVals):
         line = line.strip()
         (kid, orderNumber, actualDeal, fans) = map(lambda x: int(x), line.split())
         input = array([orderNumber, actualDeal, fans])
-        classifierResult = classify((input-minVals)/ranges, dataMatrix, classLabelVector, 2)
+        classifierResult = classify((input-minVals)/ranges, dataMatrix, classLabelVector, k)
         print '%d [orderNumber=%d actualDeal=%d fans=%d] is %s potiential renewal user' % (kid, orderNumber, actualDeal, fans, "not" if classifierResult != 1 else "" )
 
 if __name__ == '__main__':
+    createMoreSamplesFrom('origin.txt', 10)
     (dataMatrix,classLabelVector) = file2matrix('sample.txt')
     (dataMatrix,ranges, minVals) = autoNorm(dataMatrix)
     
