@@ -61,7 +61,7 @@ def autoNorm(dataset):
     normDataset = zeros(shape(dataset))
     rows = dataset.shape[0]
     normDataset = dataset - tile(minVals, (rows,1))
-    normDataset = normDataset / tile(ranges, (rows,1))
+    normDataset = true_divide(normDataset, tile(ranges, (rows,1)))
     return normDataset, ranges, minVals
 
 def computeDistance(inX, dataset):
