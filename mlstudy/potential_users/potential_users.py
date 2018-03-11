@@ -10,10 +10,12 @@
 #!/usr/bin/env python
 
 import random
+import math
 import matplotlib
 import matplotlib.pyplot as plot
 from numpy import *
 import operator
+
 
 indicatorNumber = 3
 k = 5
@@ -28,8 +30,11 @@ def createMoreSamplesFrom(filename, n):
     dataw = open('sample.txt', 'w')
     for i in range(totalLines):
         data = map (lambda x: int(x), lines[random.randint(0,lineNum)].strip().split())
-        (orderNumber, actualDeal, fans, classifierResult) = (data[0] + random.randint(0, 500), data[1] + random.randint(0, 500000), data[2] + random.randint(0, 100000), data[3])
-        dataw.write('%d %d %d %d\n' % (orderNumber, actualDeal, fans, classifierResult))  
+        newdata = []
+        for j in range(indicatorNumber):
+            newdata.append(str(data[j] + random.randint(0, math.pow(8, j)*10)))
+            classifierResult = data[-1]
+        dataw.write('%s %d\n' % (' '.join(newdata), classifierResult))  
     dataw.close()
  
 def file2matrix(filename):
@@ -59,12 +64,49 @@ def autoNorm(dataset):
     normDataset = normDataset / tile(ranges, (rows,1))
     return normDataset, ranges, minVals
 
-def classify(inX, dataset, labels, k):
+def computeDistance(inX, dataset):
     datasetrows = dataset.shape[0]
     diffMat = tile(inX, (datasetrows, 1)) - dataset
     sqDiffMat = diffMat ** 2
     sqDistances = sqDiffMat.sum(axis=1)
     distances = sqDistances ** 0.5
+    return distances
+
+def divideNParts(total, N):
+    '''
+       divide [0, total) into N parts:
+        return [(0, total/N), (total/N, 2M/N), ((N-1)*total/N, total)]
+    '''
+
+    each = total / N
+    parts = []
+    for index in range(N):
+        begin = index*each
+        if index == N-1:
+            end = total
+        else:
+            end = begin + each
+        parts.append((begin, end))
+    return parts
+
+def fastComputeDistance(inX, dataset, n):
+    totalrows = dataset.shape[0]
+    parts = divideNParts(totalrows, n)
+    partsResult = getPartResults(inX, dataset, parts)
+    return array(flatten(partsResult))
+
+def flatten(multiDimenList):
+    return [item for sublist in multiDimenList for item in sublist]   
+
+def getPartResults(inX, dataset, parts):
+    # should use concurrent implementation
+    partsResult = []
+    for part in parts:
+        partsResult.append(computeDistance(inX, dataset[part[0]:part[1], :]))
+    return partsResult
+
+def classify(inX, dataset, labels, k):
+    distances = fastComputeDistance(inX, dataset, 4)
     sortedDistIndicies = distances.argsort()
     classCount = {}
     for i in range(k):
@@ -99,17 +141,39 @@ def classifyInstance(dataMatrix,classLabelVector, ranges, minVals):
     dataf = open('data.txt')
     for line in dataf:
         line = line.strip()
-        (kid, orderNumber, actualDeal, fans) = map(lambda x: int(x), line.split())
-        input = array([orderNumber, actualDeal, fans])
+        # the first line is id of data, should not be used for distance computation
+        data = map(lambda x: int(x), line.split())
+        input = array(list(data[1:len(data)]))
         classifierResult = classify((input-minVals)/ranges, dataMatrix, classLabelVector, k)
-        print '%d [orderNumber=%d actualDeal=%d fans=%d] is %s potiential renewal user' % (kid, orderNumber, actualDeal, fans, "not" if classifierResult != 1 else "" )
+        features = " ".join(map(lambda x: str(x), data[1:]))
+        print '%d (%s) is %s potiential renewal user' % (data[0], features, "not" if classifierResult != 1 else "" )
+
+def test():
+    x = array([[16,4,9], [3,15,27], [12,1,18], [20, 7, 15], [7,9,15], [23,8,11], [5,17,26], [3,10,6]])
+    xNorm = autoNorm(x)
+    print 'x: ', x , 'norm(x): ', xNorm
+
+    inX = array([0.1,0.5,0.8])
+    slowComputeDistances = computeDistance(inX, xNorm[0])
+    print 'slow distances: ', slowComputeDistances
+
+    for npart in [1,2,3,4]:
+        fastComputeDistances = fastComputeDistance(inX, xNorm[0],npart)
+        print 'fast distances: ', fastComputeDistances
+        
+        for ind in range(slowComputeDistances.shape[0]):
+            slowComputeDistances[ind] == fastComputeDistances[ind]
+              
 
 if __name__ == '__main__':
+
+    test()
+
     createMoreSamplesFrom('origin.txt', 10)
     (dataMatrix,classLabelVector) = file2matrix('sample.txt')
     (dataMatrix,ranges, minVals) = autoNorm(dataMatrix)
     
-    print 'dataset: ', (dataMatrix,classLabelVector)
+    #print 'dataset: ', (dataMatrix,classLabelVector)
     draw(dataMatrix)
 
     computeErrorRatio(dataMatrix, classLabelVector)
