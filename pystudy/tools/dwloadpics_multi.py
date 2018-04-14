@@ -4,64 +4,27 @@
 import os
 import re
 import sys
-from multiprocessing import (cpu_count, Pool)
-from multiprocessing.dummy import Pool as ThreadPool
 
-import requests
-from bs4 import BeautifulSoup
+from common import createDir, catchExc
+from net import getSoup, batchGetSoups, download, downloadForSinleParam
+from multitasks import *
 
-ncpus = cpu_count()
 saveDir = os.environ['HOME'] + '/joy/pic/pconline'
-dwpicPool = ThreadPool(20)
-getUrlPool = ThreadPool(20)
+dwpicPool = ThreadPool(5)
+getUrlPool = ThreadPool(2)
 
-def createDir(dirName):
-    if not os.path.exists(dirName):
-        os.makedirs(dirName)
-
-def catchExc(func):
-    def _deco(*args, **kwargs):
-        try:
-            return func(*args, **kwargs)
-        except Exception as e:
-            print "error catch exception for %s (%s, %s): %s" % (func.__name__, str(*args), str(**kwargs), e)
-            return None
-    return _deco
-
-
-@catchExc
-def batchGetSoups(urls):
-    '''
-       get the html content of url and transform into soup object 
-           in order to parse what i want later
-    '''
-
-    urlnum = len(urls)
-    if urlnum == 0:
-        return []
-
-    results = getUrlPool.map(requests.get, urls)
-
-    soups = []
-    for res in results:
-        #r = res.get(timeout=1) 
-        r = res
-        status = r.status_code
-
-        if status != 200:
-            continue
-        resp = r.text
-        soup = BeautifulSoup(resp, "lxml")
-        soups.append(soup)
-    return soups
+taskPool = Pool(processes=ncpus)
 
 @catchExc 
-def parseTotal(soup):
+def parseTotal(href):
     '''
-      parse total number of pics in html tag <span class="totPic"> (1/total)</span>
+      total number of pics is obtained from a data request , not static html.
     '''
-    totalNode = soup.find('span', class_='totPics')
-    total = int(totalNode.text.split('/')[1].replace(')',''))
+    photoId = href.rsplit('/',1)[1].split('.')[0]
+    url = "http://dp.pconline.com.cn/public/photo/include/2016/pic_photo/intf/loadPicAmount.jsp?photoId=%s" % photoId
+    soup = getSoup("http://dp.pconline.com.cn/public/photo/include/2016/pic_photo/intf/loadPicAmount.jsp?photoId=%s" % photoId)
+    totalNode = soup.find('p')
+    total = int(totalNode.text)
     return total
 
 @catchExc 
@@ -74,29 +37,12 @@ def buildSubUrl(href, ind):
     '''
     return href.rsplit('.', 1)[0] + "_" + str(ind) + '.html' 
 
-@catchExc 
-def downloadPic(piclink):
-    '''
-       download pic from pic href such as 
-            http://img.pconline.com.cn/images/upload/upc/tx/photoblog/1610/21/c9/28691979_1477032141707.jpg
-    '''
-
-    picsrc = piclink.attrs['src']
-    picname = picsrc.rsplit('/',1)[1]
-    saveFile = saveDir + '/' + picname
-
-    picr = requests.get(piclink.attrs['src'], stream=True)
-    with open(saveFile, 'wb') as f:
-        for chunk in picr.iter_content(chunk_size=1024):  
-            if chunk:
-                f.write(chunk)
-                f.flush() 
-    f.close()
-
-@catchExc
 def getOriginPicLink(subsoup):
     hdlink = subsoup.find('a', class_='aView aViewHD')
-    return hdlink.attrs['href']
+    return hdlink.attrs['ourl']
+
+def findPicLink(picsoup):
+    return picsoup.find('img', src=re.compile(".jpg"))
 
 @catchExc 
 def downloadForASerial(serialHref):
@@ -105,16 +51,17 @@ def downloadForASerial(serialHref):
     '''
 
     href = serialHref
-    subsoups = batchGetSoups([href])
-    total = parseTotal(subsoups[0])
+    total = getUrlPool.map(parseTotal, [href])[0]
     print 'href: %s *** total: %s' % (href, total)
    
     suburls = [buildSubUrl(href, ind) for ind in range(1, total+1)]
-    subsoups = batchGetSoups(suburls)
+    subsoups = batchGetSoups(getUrlPool, suburls)    
+
     picUrls = map(getOriginPicLink, subsoups)
-    picSoups = batchGetSoups(picUrls)
-    piclinks = map(lambda picsoup: picsoup.find('img', src=re.compile(".jpg")), picSoups)
-    dwpicPool.map_async(downloadPic, piclinks) 
+    picSoups = batchGetSoups(getUrlPool,picUrls)
+    piclinks = map(findPicLink, picSoups)
+    downloadParams = map(lambda picLink: (picLink, saveDir), piclinks)
+    dwpicPool.map_async(downloadForSinleParam, downloadParams) 
 
 def downloadAllForAPage(entryurl):
     '''
@@ -122,7 +69,7 @@ def downloadAllForAPage(entryurl):
     '''
 
     print 'entryurl: ', entryurl
-    soups = batchGetSoups([entryurl])
+    soups = batchGetSoups(getUrlPool,[entryurl])
     if len(soups) == 0:
         return
 
@@ -132,9 +79,7 @@ def downloadAllForAPage(entryurl):
     if len(picLinks) == 0:
         return
     hrefs = map(lambda link: link.attrs['href'], picLinks)
-
-    for serialHref in hrefs: 
-        downloadForASerial(serialHref)
+    map(downloadForASerial, hrefs)
 
 def downloadAll(serial_num, start, end, taskPool=None):
     entryUrl = 'http://dp.pconline.com.cn/list/all_t%d_p%d.html'
@@ -143,48 +88,17 @@ def downloadAll(serial_num, start, end, taskPool=None):
 
 def execDownloadTask(entryUrls, taskPool=None):
     if taskPool:
-        taskPool.addDownloadTask(entryUrls)
+        print 'download using pool ...'
+        taskPool.execAsyncTask(downloadAllForAPage, entryUrls)
     else:
-        for entryurl in entryUrls:
-            downloadAllForAPage(entryurl)
-
-def divideNParts(total, N):                                                                                                                          
-    '''
-       divide [0, total) into N parts:
-        return [(0, total/N), (total/N, 2M/N), ((N-1)*total/N, total)]
-    '''
-     
-    each = total / N
-    parts = []
-    for index in range(N):
-        begin = index*each
-        if index == N-1:
-            end = total
-        else:
-            end = begin + each
-        parts.append((begin, end))
-    return parts
-
-class TaskProcessPool():
-    def __init__(self):
-        self.taskPool = Pool(processes=ncpus)
-
-    def addDownloadTask(self, entryUrls):
-        self.taskPool.map_async(downloadAllForAPage, entryUrls)
-
-    def close(self):
-        self.taskPool.close()
-
-    def join(self):
-        self.taskPool.join()
+        map(downloadAllForAPage, entryUrls)
 
 if __name__ == '__main__':
     createDir(saveDir)
-    taskPool = TaskProcessPool()
 
     serial_num = 145
-    end = 10
-    nparts = divideNParts(end, 5)
+    total = 4
+    nparts = divideNParts(total, 2)
     for part in nparts:
         start = part[0]+1
         end = part[1]

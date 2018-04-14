@@ -12,3 +12,4 @@ def catchExc(func):
             print "error catch exception for %s (%s, %s): %s" % (func.__name__, str(*args), str(**kwargs), e)
             return None
     return _deco
+

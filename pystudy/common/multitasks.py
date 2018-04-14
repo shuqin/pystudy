@@ -1,4 +1,7 @@
+from multiprocessing import (cpu_count, Pool)
+from multiprocessing.dummy import Pool as ThreadPool
 
+ncpus = cpu_count()
 
 def divideNParts(total, N):
     '''
@@ -17,16 +20,3 @@ def divideNParts(total, N):
         parts.append((begin, end))
     return parts
 
-class TaskProcessPool(func):
-    def __init__(self):
-        self.taskPool = Pool(processes=ncpus)
-        self.func = func
-
-    def addDownloadTask(self, func, entryUrls):
-        self.taskPool.map_async(func, entryUrls)
-
-    def close(self):
-        self.taskPool.close()
-
-    def join(self):
-        self.taskPool.join()

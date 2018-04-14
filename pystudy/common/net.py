@@ -2,14 +2,20 @@ import requests
 from bs4 import BeautifulSoup
 from common import catchExc
 
+import time
+
+delayForHttpReq = 0.5 # 500ms
+
 @catchExc
 def getSoup(url):
     '''
        get the html content of url and transform into soup object
            in order to parse what i want later
     '''
+    time.sleep(delayForHttpReq)
     result = requests.get(url)
     status = result.status_code
+    # print 'url: %s , status: %s' % (url, status)
     if status != 200:
         return None
     resp = result.text
@@ -17,7 +23,7 @@ def getSoup(url):
     return soup
 
 @catchExc
-def batchGetSoups(urls):
+def batchGetSoups(pool, urls):
     '''
        get the html content of url and transform into soup object
            in order to parse what i want later
@@ -27,7 +33,7 @@ def batchGetSoups(urls):
     if urlnum == 0:
         return []
 
-    return getUrlPool.map(getSoup, urls)
+    return pool.map(getSoup, urls)
 
 
 @catchExc
@@ -48,3 +54,7 @@ def download(piclink, saveDir):
                 f.write(chunk)
                 f.flush()
     f.close()
+
+@catchExc
+def downloadForSinleParam(paramTuple):
+    download(paramTuple[0], paramTuple[1])
