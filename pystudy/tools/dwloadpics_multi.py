@@ -13,8 +13,6 @@ saveDir = os.environ['HOME'] + '/joy/pic/pconline'
 dwpicPool = ThreadPool(5)
 getUrlPool = ThreadPool(2)
 
-taskPool = Pool(processes=ncpus)
-
 @catchExc 
 def parseTotal(href):
     '''
@@ -44,7 +42,6 @@ def getOriginPicLink(subsoup):
 def findPicLink(picsoup):
     return picsoup.find('img', src=re.compile(".jpg"))
 
-@catchExc 
 def downloadForASerial(serialHref):
     '''
        download a serial of pics  
@@ -88,13 +85,14 @@ def downloadAll(serial_num, start, end, taskPool=None):
 
 def execDownloadTask(entryUrls, taskPool=None):
     if taskPool:
-        print 'download using pool ...'
-        taskPool.execAsyncTask(downloadAllForAPage, entryUrls)
+        print 'using pool to download ...'
+        taskPool.map(downloadAllForAPage, entryUrls)
     else:
         map(downloadAllForAPage, entryUrls)
 
 if __name__ == '__main__':
     createDir(saveDir)
+    taskPool = Pool(processes=ncpus)
 
     serial_num = 145
     total = 4
