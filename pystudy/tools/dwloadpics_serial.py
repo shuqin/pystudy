@@ -5,10 +5,13 @@ import os
 import re
 import sys
 import requests
-import pp
 from bs4 import BeautifulSoup
 
 saveDir = os.environ['HOME'] + '/joy/pic/pconline/nature'
+
+def createDir(dirName):
+    if not os.path.exists(dirName):
+        os.makedirs(dirName)
 
 def catchExc(func):
     def _deco(*args, **kwargs):
@@ -36,12 +39,15 @@ def getSoup(url):
     return soup
 
 @catchExc 
-def parseTotal(soup):
+def parseTotal(href):
     '''
-      parse total number of pics in html tag <span class="totPic"> (1/total)</span>
+      total number of pics is obtained from a data request , not static html.
     '''
-    totalNode = soup.find('span', class_='totPics')
-    total = int(totalNode.text.split('/')[1].replace(')',''))
+    photoId = href.rsplit('/',1)[1].split('.')[0]
+    url = "http://dp.pconline.com.cn/public/photo/include/2016/pic_photo/intf/loadPicAmount.jsp?photoId=%s" % photoId
+    soup = getSoup("http://dp.pconline.com.cn/public/photo/include/2016/pic_photo/intf/loadPicAmount.jsp?photoId=%s" % photoId)
+    totalNode = soup.find('p')
+    total = int(totalNode.text)
     return total
 
 @catchExc 
@@ -81,7 +87,7 @@ def downloadForASerial(serialHref):
 
     href = serialHref
     subsoup = getSoup(href)
-    total = parseTotal(subsoup)
+    total = parseTotal(href)
     print 'href: %s *** total: %s' % (href, total)
     
     for ind in range(1, total+1):
@@ -90,7 +96,7 @@ def downloadForASerial(serialHref):
         subsoup = getSoup(suburl)
 
         hdlink = subsoup.find('a', class_='aView aViewHD')
-        picurl = hdlink.attrs['href']
+        picurl = hdlink.attrs['ourl']
 
         picsoup = getSoup(picurl)
         piclink = picsoup.find('img', src=re.compile(".jpg"))
@@ -130,4 +136,5 @@ def downloadAll(serial_num):
 serial_num = 145
 
 if __name__ == '__main__':
+    createDir(saveDir)
     downloadAll(serial_num)
