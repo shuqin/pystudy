@@ -9,7 +9,7 @@ def catchExc(func):
         try:
             return func(*args, **kwargs)
         except Exception as e:
-            print "error catch exception for %s (%s, %s): %s" % (func.__name__, str(*args), str(**kwargs), e)
+            print ("error catch exception for %s (%s, %s): %s" % (func.__name__, str(*args), str(**kwargs), e))
             return None
     return _deco
 

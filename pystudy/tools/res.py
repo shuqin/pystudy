@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 #_*_encoding:utf-8_*_
 
 import re
@@ -7,25 +7,23 @@ import json
 
 import argparse
 from bs4 import BeautifulSoup
-from common import *
+from common.net import *
+from common.multitasks import *
 
 def parseArgs():
     description = '''This program is used to batch download resources from specified urls.
-                     eg python dw.py -u http://xxx.html -g 1 10 _p -r '[{"img":["jpg"]}, {"class":["resLink"]}, {"id": ["HidenDataArea"]}]'
-                     will search and download resources from network urls http://xxx_p[1-10].html  by specified rulePath
+                     eg python dw.py -u http://xxx.html -r '[{"img":["jpg"]}, {"class":["resLink"]}, {"id": ["HidenDataArea"]}]'
+                     will search and download resources from network urls http://xxx.html  by specified rulePath
                   '''
     parser = argparse.ArgumentParser(description=description)
     parser.add_argument('-u','--url', nargs='+', help='At least one html urls are required', required=True)
-    parser.add_argument('-g','--generate',nargs=2, help='Given range containing two number (start end) to generate more htmls if not empty ', required=False)
     parser.add_argument('-r','--rulepath',nargs=1,help='rule path to search restures. if not given, search restures in given urls', required=False)
     args = parser.parse_args()
     init_urls = args.url
-    gene = args.generate
     rulepath = args.rulepath
-    return (init_urls, gene, rulepath)
+    return (init_urls, rulepath)
 
-def getAbsLink(link):
-    global serverDomain
+def getAbsLink(serverDomain, link):
 
     try:
         href = link.attrs['href']
@@ -74,12 +72,13 @@ def findWantedLinks(htmlcontent, rule):
           { 'video': ['mp4', ...]}
 
     '''
-  
+
+    # print("body==="+htmlcontent)
     soup = BeautifulSoup(htmlcontent, "lxml")
     alinks = []
     reslinks = []
 
-    for (key, values) in rule.iteritems():
+    for (key, values) in rule.items():
         if key == 'id':
             for id in values:
                 links = soup.find_all('a', id=id)
@@ -92,6 +91,7 @@ def findWantedLinks(htmlcontent, rule):
                     links = soup.find_all('a')
                 else:    
                     links = soup.find_all('a', class_=cls)
+                    print("\nLLL======".join(links))
                 links = map(getAbsLink, links)
                 links = filter(lambda x: x !='', links)
                 alinks.extend(links)        
@@ -140,49 +140,23 @@ def findOriginAddressesByRulePath(initUrls, rulePath):
 def downloadFromUrls(initUrls, rulePath):
     global dwResPool
     resOriginAddresses = findOriginAddressesByRulePath(initUrls, rulePath)
-    dwResPool.execTasksAsync(download, resOriginAddresses)
+    dwResPool.execAsync(download, resOriginAddresses)
 
-def testBatchGetLinks():
-    urls = ['http://dp.pconline.com.cn/list/all_t145.html']
-    urls = ['https://guzhifs.tmall.com/%22//detail.tmall.com/item.htm?id=537430822422&rn=4e22a3b274803229822fd796d2e51387\%22']
-    urls = ['https://detail.tmall.com/item.htm?spm=a1z10.1-b-s.w5003-17392175825.5.12894e47kzQ4x5&id=559610585063&scene=taobao_shop'] 
-    rules = {"img":["jpg"],"video":["mp4"]}
-    #rules = {"class":["zui"]}
-    
-    htmlcontentList = map(getHTMLContentFromUrl, urls)
+def batchGetLinks(urls, rules):
+    htmlcontentList = map(getHTMLContent, urls)
     allLinks = batchGetLinksByRule(htmlcontentList, rules)
-    print ('Test BatchGetLinks:')
-    for link in allLinks:
-        print (link)
-
-def generateMoreInitUrls(init_urls, gene):
-    '''
-      Generate more initial urls using init_urls and a range specified by gene
-      to generate urls, we give a base url containing a placeholder, then replace placeholder with number.
-       eg. 
-       base url:  http://xxx.yyy?k1=v1&k2=v2&page=placeholder -> http://xxx.yyy?k1=v1&k2=v2&page=[start-end]
-       base url is specified by -u option if -g is given.
-    '''
-
-    if not gene:
-        return init_urls
-
-    start = int(gene[0])
-    end = int(gene[1])
-    truerange = map(lambda x: x+start, range(end-start+1))
-    resultUrls = []
-    for ind in truerange:
-        for url in init_urls:
-            resultUrls.append(url.replace('placeholder', str(ind)))
-    return resultUrls
+    with open('/Users/qinshu/joy/reslinks.txt','w') as f:
+        for link in allLinks:
+            print(link)
+            f.write(link + "\n")
 
 def parseRulePathParam(rulepathjson):
     rulepath = [{'img': ['jpg']}]
     if rulepathjson:
         try:
-            rulepath = json.loads(rulepathjson[0])   
+        	rulepath = json.loads(rulepathjson[0])
         except ValueError as e:
-            print ('Param Error: invalid rulepath %s %s' % (rulepathjson, e))
+            print('Param Error: invalid rulepath %s %s' % (rulepathjson, e))
             sys.exit(1) 
     return rulepath
 
@@ -190,23 +164,30 @@ def parseServerDomain(url):
     parts = url.split('/',3)
     return parts[0] + '//' + parts[2]
 
+def testBatchGetLinks():
+    urls = ['http://dp.pconline.com.cn/list/all_t145.html']
+    rules = {"img":["jpg"],"video":["mp4"]}
+    
+    batchGetLinks(urls, rules)
 
 if __name__ == '__main__':
 
-    testBatchGetLinks()
+    # testBatchGetLinks()
 
-    (init_urls, gene, rulepathjson) = parseArgs()
-    moreInitUrls = generateMoreInitUrls(init_urls, gene)
-    print 'Generated init urls:', moreInitUrls
-    
+    (init_urls, rulepathjson) = parseArgs()
+    print('init urls: %s' % "\n".join(init_urls))
+
     rulepath = parseRulePathParam(rulepathjson)
     serverDomain = parseServerDomain(init_urls[0])
-    print 'rulepath: %s, serverDomain:%s' % (rulepath, serverDomain)
+    print('rulepath: %s\n serverDomain:%s' % (rulepath, serverDomain))
 
-    createDir(saveDir)
+    batchGetLinks(init_urls, rulepath)
 
-    dwResPool = IoTaskThreadPool(20)
+    # dwResPool = IoTaskThreadPool(20)
 
-    downloadFromUrls(moreInitUrls, rulepath)
-    dwResPool.close()
-    dwResPool.join()
+    # downloadFromUrls(init_urls, rulepath)
+    # dwResPool.close()
+    # dwResPool.join()
+
+
+
