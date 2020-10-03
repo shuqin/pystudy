@@ -15,9 +15,12 @@ serverDomain = ''
 
 def parseArgs():
     description = '''This program is used to batch download resources from specified urls.
-                     eg python3 res.py -u http://xxx.html -r 'img=jpg,png;class=resLink;id=xyz'
+                     eg. python3 res.py -u http://xxx.html -r 'img=jpg,png;class=resLink;id=xyz'
                      will search resource links from network urls http://xxx.html  by specified rules
                      img = jpg or png OR class = resLink OR id = xyz [ multiple rules ]
+
+                     python3 tools/res.py -u 'http://tu.heiguang.com/works/show_167480.html' -r 'img=jpg!c'
+                     for <img src="xxx.jpg!c"/> 
                   '''
     parser = argparse.ArgumentParser(description=description)
     parser.add_argument('-u','--url', nargs='+', help='At least one html urls are required', required=True)
@@ -162,7 +165,7 @@ def testBatchGetLinks():
 
 if __name__ == '__main__':
 
-    testBatchGetLinks()
+    #testBatchGetLinks()
 
     (init_urls, rulesParam) = parseArgs()
     print('init urls: %s' % "\n".join(init_urls))
