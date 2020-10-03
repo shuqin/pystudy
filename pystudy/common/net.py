@@ -9,10 +9,17 @@ delayForHttpReq = 0.5 # 500ms
 
 grapHtmlPool = IoTaskThreadPool(20)
 
+asynLoading = 1  # 当网页内容是动态生成时，异步加载网页
+targetIdWhenAsyncLoading = 'page-fav' # 异步加载网页时，根据 ID 获取内容（因此此时会加载到很多噪音内容） 
+
 def getHTMLContent(url):
-    # html = getHTMLContentFromLoadedUrl(url)
-    # if not html and html != '':
-    #     return html
+    if asynLoading == 1:
+        htmlContent = getHTMLContentFromLoadedUrl(url)
+
+        if htmlContent is not None and htmlContent != '':
+            html = '<html><head></head><body>' + htmlContent + '</body></html>'
+            return html
+
     return getHTMLContentFromUrl(url)
 
 def getHTMLContentFromLoadedUrl(url):
@@ -21,9 +28,14 @@ def getHTMLContentFromLoadedUrl(url):
     '''
     driver = webdriver.PhantomJS()
     driver.get(url)
-    time.sleep(2)
-    html = driver.execute_script('return document.documentElement.outerHTML')
-    return html
+    time.sleep(10)
+
+    try:
+        elem = driver.find_element_by_id(targetIdWhenAsyncLoading)
+    except:
+        elem = driver.find_element_by_xpath('/html/body')
+
+    return elem.get_attribute('innerHTML')       
 
 def getHTMLContentFromUrl(url):
     '''

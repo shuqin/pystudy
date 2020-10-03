@@ -46,18 +46,3 @@ class IoTaskThreadPool(object):
     def join(self):
         self.ioPool.join()
 
-class TaskProcessPool():
-    '''
-       process pool for cpu operations or task assignment
-    '''
-    def __init__(self):
-        self.taskPool = Pool(processes=ncpus)
-
-    def exec(self, calcFunc, params):
-        self.taskPool.map_async(calcFunc, params)
-
-    def close(self):
-        self.taskPool.close()
-
-    def join(self):
-        self.taskPool.join()

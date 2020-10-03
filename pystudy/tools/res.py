@@ -10,14 +10,18 @@ from bs4 import BeautifulSoup
 from common.net import *
 from common.multitasks import *
 
+SaveResLinksFile = '/Users/qinshu/joy/reslinks.txt'
+serverDomain = ''
+
 def parseArgs():
     description = '''This program is used to batch download resources from specified urls.
-                     eg python dw.py -u http://xxx.html -r '[{"img":["jpg"]}, {"class":["resLink"]}, {"id": ["HidenDataArea"]}]'
-                     will search and download resources from network urls http://xxx.html  by specified rulePath
+                     eg python3 res.py -u http://xxx.html -r 'img=jpg,png;class=resLink;id=xyz'
+                     will search resource links from network urls http://xxx.html  by specified rules
+                     img = jpg or png OR class = resLink OR id = xyz [ multiple rules ]
                   '''
     parser = argparse.ArgumentParser(description=description)
     parser.add_argument('-u','--url', nargs='+', help='At least one html urls are required', required=True)
-    parser.add_argument('-r','--rulepath',nargs=1,help='rule path to search restures. if not given, search restures in given urls', required=False)
+    parser.add_argument('-r','--rulepath', nargs=1, help='rules to search resources. if not given, search resources in given urls', required=False)
     args = parser.parse_args()
     init_urls = args.url
     rulepath = args.rulepath
@@ -28,7 +32,7 @@ def getAbsLink(serverDomain, link):
     try:
         href = link.attrs['href']
         if href.startswith('//'):
-            return 'http:' + href
+            return 'https:' + href
         if href.startswith('/'):
             return serverDomain + href
         else:
@@ -48,13 +52,13 @@ def getTrueResLink(reslink):
         pos = href.find('jpg@')
         if pos == -1:
             return href
-        return href[0: pos+3] 
+        return href[0: pos+3]
     except:
         return ''
 
 def batchGetResTrueLink(resLinks):
     hrefs = map(getTrueResLink, resLinks)
-    return filter(lambda x: x!='', hrefs)
+    return filter(lambda x: x != '', hrefs)
 
 resTags = set(['img', 'video'])
 
@@ -73,7 +77,9 @@ def findWantedLinks(htmlcontent, rule):
 
     '''
 
-    # print("body==="+htmlcontent)
+    #print("html===\n"+htmlcontent+"\n===End")
+    #print("rule===\n"+str(rule)+"\n===End")
+
     soup = BeautifulSoup(htmlcontent, "lxml")
     alinks = []
     reslinks = []
@@ -83,18 +89,17 @@ def findWantedLinks(htmlcontent, rule):
             for id in values:
                 links = soup.find_all('a', id=id)
                 links = map(getTrueResLink, links)
-                links = filter(lambda x: x !='', links)
+                links = filter(lambda x: x != '', links)
                 alinks.extend(links)
         elif key == 'class':
             for cls in values:
                 if cls == '*':
                     links = soup.find_all('a')
-                else:    
+                else:
                     links = soup.find_all('a', class_=cls)
-                    print("\nLLL======".join(links))
-                links = map(getAbsLink, links)
-                links = filter(lambda x: x !='', links)
-                alinks.extend(links)        
+                links = map(lambda link: getAbsLink(serverDomain, link), links)
+                links = filter(lambda x: x != '', links)
+                alinks.extend(links)
         elif key in resTags:
             for resSuffix in values:
                 reslinks.extend(soup.find_all(key, src=re.compile(resSuffix)))
@@ -104,90 +109,69 @@ def findWantedLinks(htmlcontent, rule):
     allLinks.extend(batchGetResTrueLink(reslinks))
     return allLinks
 
-def batchGetLinksByRule(htmlcontentList, rule):
+def batchGetLinksByRule(htmlcontentList, rules):
     '''
-       find all html links or res links from html content list by rule
+       find all res links from html content list by rules
     '''
 
     links = []
     for htmlcontent in htmlcontentList:
-        links.extend(findWantedLinks(htmlcontent, rule))
+        for rule in rules:
+            links.extend(findWantedLinks(htmlcontent, rule))
     return links
-
-def defineResRulePath():
-    '''
-        return the rule path from init htmls to the origin addresses of ress
-        if we find the origin addresses of ress by
-        init htmls --> grap htmlcontents --> rules1 --> intermediate htmls
-           --> grap htmlcontents --> rules2 --> intermediate htmls
-           --> grap htmlcontents --> rules3 --> origin addresses of ress
-        we say the rulepath is [rules1, rules2, rules3]
-    '''
-    return []
-
-def findOriginAddressesByRulePath(initUrls, rulePath):
-    '''
-       find Origin Addresses of ress by rulePath started from initUrls
-    '''
-    result = initUrls[:]
-    for rule in rulePath:
-        htmlContents = batchGrapHtmlContents(result)
-        links = batchGetLinksByRule(htmlContents, rule)
-        result = []
-        result.extend(links)
-    return result
-
-def downloadFromUrls(initUrls, rulePath):
-    global dwResPool
-    resOriginAddresses = findOriginAddressesByRulePath(initUrls, rulePath)
-    dwResPool.execAsync(download, resOriginAddresses)
 
 def batchGetLinks(urls, rules):
     htmlcontentList = map(getHTMLContent, urls)
     allLinks = batchGetLinksByRule(htmlcontentList, rules)
-    with open('/Users/qinshu/joy/reslinks.txt','w') as f:
+    with open(SaveResLinksFile, 'w') as f:
         for link in allLinks:
             print(link)
             f.write(link + "\n")
 
-def parseRulePathParam(rulepathjson):
-    rulepath = [{'img': ['jpg']}]
-    if rulepathjson:
+def parseRulesParam(rulesParam):
+    '''
+       parse rules params to rules json
+       eg. img=jpg,png;class=resLink;id=xyz to
+           [{"img":["jpg","png"], "class":["resLink"], "id":["xyz"]}]
+    '''
+    defaultRules = [{'img': ['jpg']}]
+    if rulesParam:
         try:
-        	rulepath = json.loads(rulepathjson[0])
+            rules = []
+            rulesStrArr = rulesParam[0].split(";")
+            for ruleStr in rulesStrArr:
+                ruleArr = ruleStr.split("=")
+                key = ruleArr[0]
+                value = ruleArr[1].split(",")
+                rules.append({key: value})
+            return rules
         except ValueError as e:
             print('Param Error: invalid rulepath %s %s' % (rulepathjson, e))
-            sys.exit(1) 
-    return rulepath
+            sys.exit(1)
+    return defaultRules
 
 def parseServerDomain(url):
-    parts = url.split('/',3)
+    parts = url.split('/', 3)
     return parts[0] + '//' + parts[2]
 
 def testBatchGetLinks():
     urls = ['http://dp.pconline.com.cn/list/all_t145.html']
-    rules = {"img":["jpg"],"video":["mp4"]}
-    
+    rules = [{"img":["jpg"], "video":["mp4"]}]
+
     batchGetLinks(urls, rules)
 
 if __name__ == '__main__':
 
-    # testBatchGetLinks()
+    testBatchGetLinks()
 
-    (init_urls, rulepathjson) = parseArgs()
+    (init_urls, rulesParam) = parseArgs()
     print('init urls: %s' % "\n".join(init_urls))
 
-    rulepath = parseRulePathParam(rulepathjson)
+    rulepath = parseRulesParam(rulesParam)
     serverDomain = parseServerDomain(init_urls[0])
     print('rulepath: %s\n serverDomain:%s' % (rulepath, serverDomain))
 
     batchGetLinks(init_urls, rulepath)
-
-    # dwResPool = IoTaskThreadPool(20)
-
-    # downloadFromUrls(init_urls, rulepath)
-    # dwResPool.close()
-    # dwResPool.join()
 
 
 
