@@ -101,7 +101,7 @@ def findWantedLinks(htmlcontent, rule):
                 else:
                     links = soup.find_all('a', class_=cls)
                 links = map(lambda link: getAbsLink(serverDomain, link), links)
-                links = filter(lambda x: x != '', links)
+                links = filter(lambda x: validate(x), links)
                 alinks.extend(links)
         elif key in resTags:
             for resSuffix in values:
@@ -111,6 +111,21 @@ def findWantedLinks(htmlcontent, rule):
     allLinks.extend(alinks)
     allLinks.extend(batchGetResTrueLink(reslinks))
     return allLinks
+
+def validate(link):
+
+    validSuffix = ['png', 'jpg', 'jpeg', 'mp4']
+
+    for suf in validSuffix:
+        if link.endswith(suf):
+            return True
+    if link == '':
+        return False
+    if link.endswith('html'):
+        return False
+    if 'javascript' in link:
+        return False    
+    return True    
 
 def batchGetLinksByRule(htmlcontentList, rules):
     '''

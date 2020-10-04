@@ -4,9 +4,9 @@ from bs4 import BeautifulSoup
 from common.common import catchExc
 from common.multitasks import IoTaskThreadPool
 from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
 
 delayForHttpReq = 0.5 # 500ms
- 
 
 class HTMLGrasper(object):
 
@@ -44,7 +44,11 @@ class HTMLGrasper(object):
         '''
            get html content from dynamic loaed html url
         '''
-        driver = webdriver.PhantomJS()
+
+        chrome_options = Options()
+        chrome_options.add_argument('--headless')
+        chrome_options.add_argument('--disable-gpu')
+        driver = webdriver.Chrome(chrome_options=chrome_options)
         driver.get(url)
         time.sleep(self.sleepWhenAsync)
 

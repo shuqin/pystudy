@@ -1,0 +1,1 @@
+python3 tools/res.py -u 'https://space.bilibili.com/183260251/favlist?fid=737503651&ftype=create' -r 'class=*' | grep 'video' | sort | uniq | xargs -I {} you-get {}
