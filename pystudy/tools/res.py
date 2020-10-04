@@ -124,7 +124,9 @@ def batchGetLinksByRule(htmlcontentList, rules):
     return links
 
 def batchGetLinks(urls, rules):
-    htmlcontentList = map(getHTMLContent, urls)
+    conf = {"async":1, "targetIdWhenAsync": "page-fav", "sleepWhenAsync": 10}
+    grasper = HTMLGrasper(conf)
+    htmlcontentList = grasper.batchGrapHtmlContents(urls)
     allLinks = batchGetLinksByRule(htmlcontentList, rules)
     with open(SaveResLinksFile, 'w') as f:
         for link in allLinks:

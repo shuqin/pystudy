@@ -6,89 +6,83 @@ from common.multitasks import IoTaskThreadPool
 from selenium import webdriver
 
 delayForHttpReq = 0.5 # 500ms
+ 
 
-grapHtmlPool = IoTaskThreadPool(20)
+class HTMLGrasper(object):
 
-asynLoading = 1  # 当网页内容是动态生成时，异步加载网页
-targetIdWhenAsyncLoading = 'page-fav' # 异步加载网页时，根据 ID 获取内容（因此此时会加载到很多噪音内容） 
+    def __init__(self, conf):
+        '''
+        抓取 HTML 网页内容时的配置项
+          _async: 是否异步加载网页。 _async = 1 当网页内容是动态生成时，异步加载网页; 
+          targetIdWhenAsync: 当 _async = 1 指定。
+             由于此时会加载到很多噪音内容，需要指定 ID 来精确获取所需的内容部分
+          sleepWhenAsync:  当 _async = 1 指定。
+             异步加载网页时需要等待的秒数  
+        '''
+        self._async = conf.get('async', 0)
+        self.targetIdWhenAsync = conf.get('targetIdWhenAsync', '')
+        self.sleepWhenAsync = conf.get('sleepWhenAsync', 10)
 
-def getHTMLContent(url):
-    if asynLoading == 1:
-        htmlContent = getHTMLContentFromLoadedUrl(url)
+    def batchGrapHtmlContents(self, urls):
+        '''
+           batch get the html contents of urls
+        '''
+        grapHtmlPool = IoTaskThreadPool(20)
+        return grapHtmlPool.exec(self.getHTMLContent, urls)
 
-        if htmlContent is not None and htmlContent != '':
-            html = '<html><head></head><body>' + htmlContent + '</body></html>'
-            return html
+    def getHTMLContent(self, url):
+        if self._async == 1:
+            htmlContent = self.getHTMLContentAsync(url)
 
-    return getHTMLContentFromUrl(url)
+            if htmlContent is not None and htmlContent != '':
+                html = '<html><head></head><body>' + htmlContent + '</body></html>'
+                return html
 
-def getHTMLContentFromLoadedUrl(url):
-    '''
-       get html content from dynamic loaed html url
-    '''
-    driver = webdriver.PhantomJS()
-    driver.get(url)
-    time.sleep(10)
+        return self.getHTMLContentFromUrl(url)
 
-    try:
-        elem = driver.find_element_by_id(targetIdWhenAsyncLoading)
-    except:
-        elem = driver.find_element_by_xpath('/html/body')
+    def getHTMLContentAsync(self, url):
+        '''
+           get html content from dynamic loaed html url
+        '''
+        driver = webdriver.PhantomJS()
+        driver.get(url)
+        time.sleep(self.sleepWhenAsync)
 
-    return elem.get_attribute('innerHTML')       
+        try:
+            elem = driver.find_element_by_id(self.targetIdWhenAsync)
+        except:
+            elem = driver.find_element_by_xpath('/html/body')
 
-def getHTMLContentFromUrl(url):
-    '''
-       get html content from html url
-    '''
-    r = requests.get(url)
-    status = r.status_code
-    if status != 200:
-        return ''
-    return r.text
+        return elem.get_attribute('innerHTML')       
 
-def batchGrapHtmlContents(urls):
-    '''
-       batch get the html contents of urls
-    '''
-    global grapHtmlPool
-    return grapHtmlPool.exec(getHTMLContent, urls)
+    def getHTMLContentFromUrl(self, url):
+        '''
+           get html content from html url
+        '''
+        r = requests.get(url)
+        status = r.status_code
+        if status != 200:
+            return ''
+        return r.text
 
-@catchExc
-def getSoup(url):
-    '''
-       get the html content of url and transform into soup object
-           in order to parse what i want later
-    '''
-    time.sleep(delayForHttpReq)
-    result = requests.get(url)
-    status = result.status_code
-    # print 'url: %s , status: %s' % (url, status)
-    if status != 200:
-        return None
-    resp = result.text
-    soup = BeautifulSoup(resp, "lxml")
-    return soup
 
-@catchExc
-def batchGetSoups(pool, urls):
-    '''
-       get the html content of url and transform into soup object
-           in order to parse what i want later
-    '''
+'''
+    # 利用property装饰器将获取name方法转换为获取对象的属性
+    @property
+    def async(self):
+        return self._async
 
-    urlnum = len(urls)
-    if urlnum == 0:
-        return []
-
-    return pool.map(getSoup, urls)
-
+    # 利用property装饰器将设置name方法转换为获取对象的属性
+    @async.setter
+    def async(self,async):
+        self._async = async 
+'''       
 
 @catchExc
 def download(piclink, saveDir):
     '''
-       download pic from pic href such as
-            http://img.pconline.com.cn/images/upload/upc/tx/photoblog/1610/21/c9/28691979_1477032141707.jpg
+       #download pic from pic href such as
+       #     http://img.pconline.com.cn/images/upload/upc/tx/photoblog/1610/21/c9/28691979_1477032141707.jpg
     '''
 
     picsrc = piclink.attrs['src']
@@ -107,3 +101,4 @@ def download(piclink, saveDir):
 @catchExc
 def downloadForSinleParam(paramTuple):
     download(paramTuple[0], paramTuple[1])
+
