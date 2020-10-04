@@ -24,7 +24,7 @@ def parseArgs():
                   '''
     parser = argparse.ArgumentParser(description=description)
     parser.add_argument('-u','--url', nargs='+', help='At least one html urls are required', required=True)
-    parser.add_argument('-r','--rulepath', nargs=1, help='rules to search resources. if not given, search resources in given urls', required=False)
+    parser.add_argument('-r','--rulepath', nargs=1, help='rules to search resources. if not given, search a hrefs or img resources in given urls', required=False)
     args = parser.parse_args()
     init_urls = args.url
     rulepath = args.rulepath
@@ -139,7 +139,7 @@ def parseRulesParam(rulesParam):
        eg. img=jpg,png;class=resLink;id=xyz to
            [{"img":["jpg","png"], "class":["resLink"], "id":["xyz"]}]
     '''
-    defaultRules = [{'img': ['jpg']}]
+    defaultRules = [{'img': ['jpg','png','jpeg']},{"class":"*"}]
     if rulesParam:
         try:
             rules = []
